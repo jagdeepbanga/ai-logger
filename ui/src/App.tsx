@@ -153,7 +153,7 @@ export default function App() {
     const next = !dark;
     setDark(next);
     document.documentElement.classList.toggle("dark", next);
-    localStorage.setItem("llmlogger:theme", next ? "dark" : "light");
+    localStorage.setItem("ai-logger:theme", next ? "dark" : "light");
   };
 
   const removeSession = async (project: string, id: string): Promise<void> => {
@@ -168,7 +168,7 @@ export default function App() {
       <header className="flex items-center gap-3 border-b border-zinc-200 px-4 py-2.5 dark:border-zinc-800">
         <button type="button" onClick={() => go({})} className="flex items-center gap-2">
           <span className="text-base">🔍</span>
-          <span className="text-sm font-semibold tracking-tight">llmlogger</span>
+          <span className="text-sm font-semibold tracking-tight">AI Logger</span>
         </button>
         <span className="hidden text-xs text-zinc-500 sm:block">
           every request Claude Code sends to the model
@@ -214,7 +214,7 @@ export default function App() {
                   hint={
                     sessions.length === 0 ? (
                       <>
-                        Run <code className="font-mono">llmlogger</code> in a project instead of{" "}
+                        Run <code className="font-mono">ai-logger</code> in a project instead of{" "}
                         <code className="font-mono">claude</code>. Every request that session
                         makes appears here, live.
                       </>

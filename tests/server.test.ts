@@ -51,8 +51,8 @@ const summary: CallSummary = {
 };
 
 beforeEach(async () => {
-  tempHome = fs.mkdtempSync(path.join(os.tmpdir(), "llmlogger-srv-"));
-  process.env.LLMLOGGER_HOME = tempHome;
+  tempHome = fs.mkdtempSync(path.join(os.tmpdir(), "ai-logger-srv-"));
+  process.env.AI_LOGGER_HOME = tempHome;
   writeSessionMeta(meta);
   writeCall(meta, summary, {
     requestRaw: '{"model":"claude-opus-5","messages":[]}',
@@ -65,7 +65,7 @@ beforeEach(async () => {
 
 afterEach(async () => {
   await server.close();
-  delete process.env.LLMLOGGER_HOME;
+  delete process.env.AI_LOGGER_HOME;
   fs.rmSync(tempHome, { recursive: true, force: true });
 });
 

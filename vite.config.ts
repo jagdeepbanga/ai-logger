@@ -18,7 +18,7 @@ export default defineConfig({
   server: {
     port: 5199,
     // `npm run dev` serves the UI with hot reload and talks to a running
-    // `llmlogger ui` for data, so the UI can be worked on without rebuilding.
+    // `ai-logger ui` for data, so the UI can be worked on without rebuilding.
     proxy: { "/api": "http://127.0.0.1:4747" },
   },
 });

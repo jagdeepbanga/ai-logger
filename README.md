@@ -1,12 +1,12 @@
-# llmlogger
+# AI Logger
 
 See exactly what Claude Code sends to the model — the real system prompt, every
 tool schema, the whole conversation, the skills it advertised, and what it cost
 — in a local web UI.
 
 ```
-llmlogger          # instead of `claude`
-llmlogger ui       # browse what it recorded
+ai-logger          # instead of `claude`
+ai-logger ui       # browse what it recorded
 ```
 
 Works in any project, in any language. Nothing is written into your repo.
@@ -20,7 +20,7 @@ filled it. A single turn can carry 90 KB of request, and in a typical session
 **the tool schemas are bigger than the system prompt and the conversation put
 together** — a fact that is invisible until you look at the bytes.
 
-`llmlogger` makes it visible:
+`ai-logger` makes it visible:
 
 - **What went in** — the verbatim system prompt, every tool definition ranked
   by size, the full message history with a byte cost on each block.
@@ -32,20 +32,20 @@ together** — a fact that is invisible until you look at the bytes.
 ## How it works
 
 Claude Code reads `ANTHROPIC_BASE_URL` to decide where to send requests.
-`llmlogger` starts a proxy on a loopback port, launches Claude Code with that
+`ai-logger` starts a proxy on a loopback port, launches Claude Code with that
 variable already set, forwards every request upstream untouched — your auth
 header included, so a subscription login keeps working — and streams responses
 straight back as they arrive. The agent behaves exactly as it would without it.
 Only a copy is kept.
 
 ```
-llmlogger
+ai-logger
   └─ proxy on 127.0.0.1:<free port>
      └─ spawns: claude   (ANTHROPIC_BASE_URL=…, ENABLE_TOOL_SEARCH=true)
         │
         └─ request → api.anthropic.com → response
                         ↓ a copy
-                  ~/.llmlogger/sessions/<project>/<session>/
+                  ~/.ai-logger/sessions/<project>/<session>/
 ```
 
 Launching the agent rather than asking you to export a variable removes the
@@ -57,10 +57,10 @@ the order wrong records nothing and looks identical to a broken tool.
 Requires Node 20 or newer, and `claude` on your `PATH`.
 
 ```bash
-git clone https://github.com/<you>/llmlogger.git
-cd llmlogger
+git clone https://github.com/<you>/ai-logger.git
+cd ai-logger
 npm install          # also builds, via the prepare script
-npm link             # puts `llmlogger` on your PATH
+npm link             # puts `ai-logger` on your PATH
 ```
 
 If `npm link` fails with `EACCES`, your npm prefix needs root. Symlink it into
@@ -68,7 +68,7 @@ a directory you own instead:
 
 ```bash
 mkdir -p ~/.local/bin
-ln -sf "$PWD/dist/cli.js" ~/.local/bin/llmlogger
+ln -sf "$PWD/dist/cli.js" ~/.local/bin/ai-logger
 # make sure ~/.local/bin is on your PATH
 ```
 
@@ -76,29 +76,29 @@ ln -sf "$PWD/dist/cli.js" ~/.local/bin/llmlogger
 
 ```bash
 cd ~/code/my-laravel-app
-llmlogger                       # record a session; work exactly as normal
+ai-logger                       # record a session; work exactly as normal
 ```
 
 Every `claude` flag passes straight through:
 
 ```bash
-llmlogger --resume
-llmlogger --model claude-opus-5
-llmlogger -p "explain the User model"
+ai-logger --resume
+ai-logger --model claude-opus-5
+ai-logger -p "explain the User model"
 ```
 
 When the session ends you get a summary. Then:
 
 ```bash
-llmlogger ui                    # open the viewer (http://127.0.0.1:4747)
-llmlogger ui --port 4848        # somewhere else
-llmlogger ls                    # list recordings from the terminal
-llmlogger rm 2026-09-14T12-38   # delete one
-llmlogger rm --all              # delete everything
-llmlogger where                 # print the recordings directory
+ai-logger ui                    # open the viewer (http://127.0.0.1:4747)
+ai-logger ui --port 4848        # somewhere else
+ai-logger ls                    # list recordings from the terminal
+ai-logger rm 2026-09-14T12-38   # delete one
+ai-logger rm --all              # delete everything
+ai-logger where                 # print the recordings directory
 ```
 
-The viewer streams: leave `llmlogger ui` open in a tab while you work and calls
+The viewer streams: leave `ai-logger ui` open in a tab while you work and calls
 appear as the agent makes them, with a live marker on the session.
 
 ## The UI
@@ -131,14 +131,14 @@ visible.
 **Watching changes the thing watched.** Claude Code trusts exactly one host.
 Pointed anywhere else it turns off tool search, stops deferring tool schemas,
 and inlines every one of them — the recording would be far larger than a real
-request and the wrong shape. `llmlogger` sets `ENABLE_TOOL_SEARCH=true` to cancel
+request and the wrong shape. `ai-logger` sets `ENABLE_TOOL_SEARCH=true` to cancel
 that, so what you read is what Claude Code really sends.
 
 ## Where recordings live
 
-`~/.llmlogger/sessions/<project>/<session>/`, outside your project — so there is
+`~/.ai-logger/sessions/<project>/<session>/`, outside your project — so there is
 nothing to gitignore and no chance of committing prompts and source code.
-Override with `LLMLOGGER_HOME`.
+Override with `AI_LOGGER_HOME`.
 
 Plain files, so a recording is useful without this tool:
 
@@ -157,15 +157,15 @@ are replaced with `<redacted>` before anything touches disk — the real values
 are never written. The viewer binds to loopback only.
 
 Everything else is verbatim, so a recording contains your prompts, your source
-code and any file the agent read. Treat `~/.llmlogger` as sensitive as the projects
-it records, and use `llmlogger rm --all` when you are done with it.
+code and any file the agent read. Treat `~/.ai-logger` as sensitive as the projects
+it records, and use `ai-logger rm --all` when you are done with it.
 
 ## Other agents
 
 The recorder is Anthropic-shaped: it reads the Messages API wire format and
 sets `ANTHROPIC_BASE_URL`. Point it at a gateway or a local server with
-`LLMLOGGER_UPSTREAM=http://127.0.0.1:9000`, and override the launched binary with
-`LLMLOGGER_AGENT_BIN`.
+`AI_LOGGER_UPSTREAM=http://127.0.0.1:9000`, and override the launched binary with
+`AI_LOGGER_AGENT_BIN`.
 
 Some tools cannot be recorded by anything, and this is worth knowing: a few
 vendors build the system prompt **on their servers**, so your machine never
@@ -178,7 +178,7 @@ property of those products, not a limit of this one.
 npm test             # 80 tests, including the proxy end to end
 npm run typecheck    # server and UI
 npm run build        # dist/cli.js + dist/ui
-npm run dev          # UI with hot reload; run `llmlogger ui` alongside for data
+npm run dev          # UI with hot reload; run `ai-logger ui` alongside for data
 ```
 
 The end-to-end test drives the real proxy against a fake upstream with a
@@ -190,7 +190,7 @@ stand-in agent, so it needs no network and no API key.
 | `src/capture.ts` | Measuring requests, rebuilding responses — all pure |
 | `src/store.ts` | Reading and writing recordings |
 | `src/server.ts` | JSON API, static UI, live events |
-| `src/cli.ts` | The `llmlogger` command |
+| `src/cli.ts` | The `ai-logger` command |
 | `ui/` | The viewer (React, built into `dist/ui`) |
 
 The installed package has **no runtime dependencies** — React is bundled at
@@ -200,7 +200,7 @@ build time, and the server is Node built-ins.
 
 The idea of proxying a coding agent to read its prompts comes from Matt
 Pocock's AI Coding Crash Course, which includes a multi-agent `request-logger`
-that writes Markdown captures. `llmlogger` narrows the scope to Claude Code and
+that writes Markdown captures. `ai-logger` narrows the scope to Claude Code and
 adds a UI, a metrics index and live streaming.
 
 ## License

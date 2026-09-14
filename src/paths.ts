@@ -6,7 +6,7 @@
  * tree would mean a `.gitignore` entry in every repo and a real chance of
  * committing source code and prompts by accident.
  *
- * `LLMLOGGER_HOME` overrides the location, which is what the tests use so that
+ * `AI_LOGGER_HOME` overrides the location, which is what the tests use so that
  * they never touch a real recording.
  */
 
@@ -15,7 +15,7 @@ import os from "node:os";
 import path from "node:path";
 
 export function home(): string {
-  return process.env.LLMLOGGER_HOME ?? path.join(os.homedir(), ".llmlogger");
+  return process.env.AI_LOGGER_HOME ?? path.join(os.homedir(), ".ai-logger");
 }
 
 export function sessionsRoot(): string {

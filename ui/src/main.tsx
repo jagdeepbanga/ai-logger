@@ -7,7 +7,7 @@ import "./index.css";
  * Apply the saved theme before the first paint, so a dark-mode user never
  * sees a white flash on load.
  */
-const saved = localStorage.getItem("llmlogger:theme");
+const saved = localStorage.getItem("ai-logger:theme");
 const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
 if (saved === "dark" || (saved === null && prefersDark)) {
   document.documentElement.classList.add("dark");

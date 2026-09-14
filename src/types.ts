@@ -66,7 +66,7 @@ export interface CallSummary {
   error?: string;
 }
 
-/** A recorded session: one `llmlogger run` in one project directory. */
+/** A recorded session: one `ai-logger run` in one project directory. */
 export interface SessionMeta {
   id: string;
   project: string;

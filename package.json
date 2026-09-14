@@ -1,11 +1,11 @@
 {
-  "name": "llmlogger",
+  "name": "ai-logger",
   "version": "0.1.0",
   "description": "See and browse every request Claude Code sends to the model, in a local web UI.",
   "license": "MIT",
   "type": "module",
   "bin": {
-    "llmlogger": "dist/cli.js"
+    "ai-logger": "dist/cli.js"
   },
   "files": [
     "dist",

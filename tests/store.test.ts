@@ -22,12 +22,12 @@ let tempHome: string;
 beforeEach(() => {
   // Every test gets its own recordings directory, so a test run can never
   // read or delete a real recording.
-  tempHome = fs.mkdtempSync(path.join(os.tmpdir(), "llmlogger-test-"));
-  process.env.LLMLOGGER_HOME = tempHome;
+  tempHome = fs.mkdtempSync(path.join(os.tmpdir(), "ai-logger-test-"));
+  process.env.AI_LOGGER_HOME = tempHome;
 });
 
 afterEach(() => {
-  delete process.env.LLMLOGGER_HOME;
+  delete process.env.AI_LOGGER_HOME;
   fs.rmSync(tempHome, { recursive: true, force: true });
 });
 

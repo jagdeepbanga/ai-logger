@@ -66,7 +66,7 @@ export interface RunResult {
  * Record one agent session, resolving when the agent exits.
  */
 export function run(options: RunOptions): Promise<RunResult> {
-  const upstream = options.upstream ?? process.env.LLMLOGGER_UPSTREAM ?? DEFAULT_UPSTREAM;
+  const upstream = options.upstream ?? process.env.AI_LOGGER_UPSTREAM ?? DEFAULT_UPSTREAM;
   const project = projectSlug(options.cwd);
   const session: SessionMeta = {
     id: sessionId(),
@@ -152,7 +152,7 @@ export function run(options: RunOptions): Promise<RunResult> {
         if (!res.headersSent) {
           res.writeHead(502, { "content-type": "application/json" });
         }
-        res.end(JSON.stringify({ error: `llmlogger upstream error: ${err.message}` }));
+        res.end(JSON.stringify({ error: `ai-logger upstream error: ${err.message}` }));
       });
 
       if (body.length > 0) upstreamReq.write(body);

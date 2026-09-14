@@ -1,16 +1,16 @@
 #!/usr/bin/env node
 /**
- * The `llmlogger` command.
+ * The `ai-logger` command.
  *
- *   llmlogger [claude args...]   record a Claude Code session in this directory
- *   llmlogger ui                 open the viewer
- *   llmlogger ls                 list recorded sessions
- *   llmlogger rm <id|--all>      delete recordings
- *   llmlogger where              print the recordings directory
+ *   ai-logger [claude args...]   record a Claude Code session in this directory
+ *   ai-logger ui                 open the viewer
+ *   ai-logger ls                 list recorded sessions
+ *   ai-logger rm <id|--all>      delete recordings
+ *   ai-logger where              print the recordings directory
  *
  * Recording is the bare command because it is the one run many times a day.
  * Every unrecognised argument is passed straight to Claude Code, so
- * `llmlogger --resume` and `llmlogger -p "..."` behave as expected; the subcommands
+ * `ai-logger --resume` and `ai-logger -p "..."` behave as expected; the subcommands
  * are matched only as the first argument.
  */
 
@@ -27,15 +27,15 @@ const bold = (s: string): string => `\x1b[1m${s}\x1b[0m`;
 const green = (s: string): string => `\x1b[32m${s}\x1b[0m`;
 
 const USAGE = `
-${bold("llmlogger")} — see every request Claude Code sends to the model.
+${bold("AI Logger")} — see every request Claude Code sends to the model.
 
-  ${bold("llmlogger")}                    record a Claude Code session here
-  ${bold("llmlogger")} --resume           any claude flag is passed straight through
-  ${bold("llmlogger ui")} [--port N]      open the viewer in a browser
-  ${bold("llmlogger ls")}                 list recorded sessions
-  ${bold("llmlogger rm")} <id>            delete one recording
-  ${bold("llmlogger rm")} --all           delete every recording
-  ${bold("llmlogger where")}              print the recordings directory
+  ${bold("ai-logger")}                    record a Claude Code session here
+  ${bold("ai-logger")} --resume           any claude flag is passed straight through
+  ${bold("ai-logger ui")} [--port N]      open the viewer in a browser
+  ${bold("ai-logger ls")}                 list recorded sessions
+  ${bold("ai-logger rm")} <id>            delete one recording
+  ${bold("ai-logger rm")} --all           delete every recording
+  ${bold("ai-logger where")}              print the recordings directory
 
 Recordings are kept in ${dim(home())}
 `;
@@ -73,7 +73,7 @@ async function main(argv: string[]): Promise<number> {
 // ---------------------------------------------------------------------------
 
 async function commandRecord(args: string[]): Promise<number> {
-  const bin = process.env.LLMLOGGER_AGENT_BIN ?? "claude";
+  const bin = process.env.AI_LOGGER_AGENT_BIN ?? "claude";
 
   const result = await run({
     bin,
@@ -85,7 +85,7 @@ async function commandRecord(args: string[]): Promise<number> {
       // the middle of its interface.
       console.log("");
       console.log(
-        dim(`[llmlogger] recording ${session.project}/${session.id} — view with: llmlogger ui`)
+        dim(`[ai-logger] recording ${session.project}/${session.id} — view with: ai-logger ui`)
       );
       console.log("");
     },
@@ -102,7 +102,7 @@ async function commandRecord(args: string[]): Promise<number> {
 
   console.log("");
   console.log(rule);
-  console.log(`  ${bold("llmlogger")} ${dim(`${result.session.project}/${result.session.id}`)}`);
+  console.log(`  ${bold("AI Logger")} ${dim(`${result.session.project}/${result.session.id}`)}`);
   console.log(rule);
   row("Generation calls", totals.generations);
   row("Token-count calls", `${totals.countTokenCalls} ${dim("(forwarded, not recorded)")}`);
@@ -115,7 +115,7 @@ async function commandRecord(args: string[]): Promise<number> {
   row("Input total", `${inputTotal.toLocaleString()} ${dim(`(${cacheShare.toFixed(0)}% cached)`)}`);
   row("Output", totals.outputTokens.toLocaleString());
   console.log(rule);
-  console.log(`  ${dim("Browse it:")} ${bold("llmlogger ui")}`);
+  console.log(`  ${dim("Browse it:")} ${bold("ai-logger ui")}`);
   console.log("");
 
   return result.exitCode;
@@ -144,7 +144,7 @@ async function commandUi(args: string[]): Promise<number> {
       console.error(
         `Port ${requested} is already in use — a viewer may already be running at http://127.0.0.1:${requested}`
       );
-      console.error(dim("Use a different one with: llmlogger ui --port 4848"));
+      console.error(dim("Use a different one with: ai-logger ui --port 4848"));
       return 1;
     }
     throw err;
@@ -152,7 +152,7 @@ async function commandUi(args: string[]): Promise<number> {
 
   const url = `http://127.0.0.1:${handle.port}`;
   console.log("");
-  console.log(`  ${green("●")} ${bold("llmlogger")} viewer on ${bold(url)}`);
+  console.log(`  ${green("●")} ${bold("AI Logger")} viewer on ${bold(url)}`);
   console.log(`  ${dim(`recordings in ${home()}`)}`);
   console.log(`  ${dim("Ctrl+C to stop")}`);
   console.log("");
@@ -192,7 +192,7 @@ function openBrowser(url: string): void {
 function commandList(): number {
   const sessions = listSessions();
   if (sessions.length === 0) {
-    console.log("No recordings yet. Start one with: llmlogger");
+    console.log("No recordings yet. Start one with: ai-logger");
     return 0;
   }
   console.log("");
@@ -206,7 +206,7 @@ function commandList(): number {
     );
   }
   console.log("");
-  console.log(dim("  Browse them: llmlogger ui"));
+  console.log(dim("  Browse them: ai-logger ui"));
   console.log("");
   return 0;
 }
@@ -221,7 +221,7 @@ function commandRemove(args: string[]): number {
   const id = args[0];
   if (!id) {
     console.error("Which recording? Pass a session id, or --all.");
-    console.error(dim("List them with: llmlogger ls"));
+    console.error(dim("List them with: ai-logger ls"));
     return 1;
   }
 
@@ -267,6 +267,6 @@ async function version(): Promise<string> {
 main(process.argv.slice(2))
   .then((code) => process.exit(code))
   .catch((err: Error) => {
-    console.error(`llmlogger: ${err.message}`);
+    console.error(`ai-logger: ${err.message}`);
     process.exit(1);
   });

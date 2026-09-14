@@ -36,8 +36,8 @@ const STREAM = [
 ].join("\n");
 
 beforeEach(async () => {
-  tempHome = fs.mkdtempSync(path.join(os.tmpdir(), "llmlogger-e2e-"));
-  process.env.LLMLOGGER_HOME = tempHome;
+  tempHome = fs.mkdtempSync(path.join(os.tmpdir(), "ai-logger-e2e-"));
+  process.env.AI_LOGGER_HOME = tempHome;
   seen.length = 0;
 
   upstream = http.createServer((req, res) => {
@@ -61,7 +61,7 @@ beforeEach(async () => {
 
 afterEach(async () => {
   await new Promise<void>((resolve) => upstream.close(() => resolve()));
-  delete process.env.LLMLOGGER_HOME;
+  delete process.env.AI_LOGGER_HOME;
   fs.rmSync(tempHome, { recursive: true, force: true });
 });
 
