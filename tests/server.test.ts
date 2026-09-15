@@ -7,6 +7,7 @@
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import fs from "node:fs";
+import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 import type { CallSummary, SessionMeta } from "../src/types.js";
@@ -160,5 +161,60 @@ describe("GET /api/events", () => {
     const response = await fetch(`${base}/api/events`, { signal: controller.signal });
     expect(response.headers.get("content-type")).toContain("text/event-stream");
     controller.abort();
+  });
+});
+
+describe("a session id from the URL cannot escape the recordings directory", () => {
+  it("refuses a project or id containing a path segment", async () => {
+    for (const target of [
+      `${base}/api/sessions/..%2F/anything`,
+      `${base}/api/sessions/my-app/..%2F..%2Fanything`,
+      `${base}/api/sessions/..%2F/anything/calls/1`,
+      `${base}/api/sessions/..%2F/anything/calls/1/raw?part=request`,
+    ]) {
+      expect((await fetch(target)).status).toBe(400);
+    }
+  });
+
+  it("does not delete a directory outside the recordings root", async () => {
+    // The severe form: DELETE lands in a recursive remove, so a climbing
+    // path would take somewhere else on disk with it.
+    const outside = path.join(tempHome, "not-a-recording");
+    fs.mkdirSync(outside, { recursive: true });
+
+    const response = await fetch(`${base}/api/sessions/..%2F/not-a-recording`, {
+      method: "DELETE",
+    });
+
+    expect(response.status).toBe(400);
+    expect(fs.existsSync(outside)).toBe(true);
+  });
+});
+
+describe("the Host header", () => {
+  // `fetch` refuses to set Host, so these go over a raw socket — which is
+  // also closer to what a rebinding browser actually sends.
+  const getWithHost = (host: string): Promise<number> =>
+    new Promise((resolve, reject) => {
+      const request = http.request(
+        { host: "127.0.0.1", port: server.port, path: "/api/sessions", headers: { host } },
+        (response) => {
+          response.resume();
+          resolve(response.statusCode ?? 0);
+        }
+      );
+      request.on("error", reject);
+      request.end();
+    });
+
+  it("is refused when it is not a loopback name", async () => {
+    // What a DNS-rebinding page would send: the socket is loopback, the name
+    // the browser used is not.
+    expect(await getWithHost("recordings.attacker.example")).toBe(403);
+  });
+
+  it("is accepted for localhost and for an IPv6 loopback literal", async () => {
+    expect(await getWithHost(`localhost:${server.port}`)).toBe(200);
+    expect(await getWithHost(`[::1]:${server.port}`)).toBe(200);
   });
 });
