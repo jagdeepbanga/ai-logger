@@ -11,6 +11,10 @@ ai-logger ui       # browse what it recorded
 
 Works in any project, in any language. Nothing is written into your repo.
 
+![The session overview: totals, request size per call split by section, input
+tokens against cache reads, and where the bytes went across the whole
+session](docs/images/session-overview.png)
+
 ---
 
 ## Why
@@ -38,15 +42,12 @@ header included, so a subscription login keeps working — and streams responses
 straight back as they arrive. The agent behaves exactly as it would without it.
 Only a copy is kept.
 
-```
-ai-logger
-  └─ proxy on 127.0.0.1:<free port>
-     └─ spawns: claude   (ANTHROPIC_BASE_URL=…, ENABLE_TOOL_SEARCH=true)
-        │
-        └─ request → api.anthropic.com → response
-                        ↓ a copy
-                  ~/.ai-logger/sessions/<project>/<session>/
-```
+![Sequence diagram of one turn: ai-logger spawns Claude Code with
+ANTHROPIC_BASE_URL pointing at its own loopback proxy; the agent posts to
+/v1/messages; the proxy forwards it upstream with the auth header intact;
+api.anthropic.com streams the response back; the proxy passes it straight on to
+the agent unbuffered; and only afterwards writes a redacted copy to
+~/.ai-logger](docs/images/request-cycle.png)
 
 Launching the agent rather than asking you to export a variable removes the
 usual failure mode: an agent reads that variable once, at startup, so getting
@@ -57,7 +58,7 @@ the order wrong records nothing and looks identical to a broken tool.
 Requires Node 20 or newer, and `claude` on your `PATH`.
 
 ```bash
-git clone https://github.com/<you>/ai-logger.git
+git clone https://github.com/jagdeepbanga/ai-logger.git
 cd ai-logger
 npm install          # also builds, via the prepare script
 npm link             # puts `ai-logger` on your PATH
@@ -120,6 +121,13 @@ and where the bytes went across the whole session.
 
 `←` and `→` step between calls; `Esc` goes back to the session.
 
+![The Tools tab of one call: every schema ranked largest first, with its size
+in kilobytes](docs/images/call-detail-tools.png)
+
+The Tools tab is the one to look at first. Here 14 tools cost 73.1 KB, and two
+of them account for two thirds of that — the kind of thing you cannot guess
+from a context percentage.
+
 ## Two things that will otherwise confuse you
 
 **One message is not one request.** A turn fans out into one real generation
@@ -154,7 +162,13 @@ calls/0001/request.json     the decoded request body, as sent
 
 `authorization`, `x-api-key`, `api-key`, `cookie` and `proxy-authorization`
 are replaced with `<redacted>` before anything touches disk — the real values
-are never written. The viewer binds to loopback only.
+are never written.
+
+The viewer binds to loopback and answers only to a loopback `Host`, so a page
+in your browser cannot rebind a domain it owns to `127.0.0.1` and read your
+recordings as if they were its own. Project and session names coming from a
+URL are checked before they are joined onto a path, so no request can reach —
+or delete — anything outside the recordings directory.
 
 Everything else is verbatim, so a recording contains your prompts, your source
 code and any file the agent read. Treat `~/.ai-logger` as sensitive as the projects
@@ -175,7 +189,7 @@ property of those products, not a limit of this one.
 ## Develop
 
 ```bash
-npm test             # 80 tests, including the proxy end to end
+npm test             # 84 tests, including the proxy end to end
 npm run typecheck    # server and UI
 npm run build        # dist/cli.js + dist/ui
 npm run dev          # UI with hot reload; run `ai-logger ui` alongside for data
@@ -196,11 +210,11 @@ stand-in agent, so it needs no network and no API key.
 The installed package has **no runtime dependencies** — React is bundled at
 build time, and the server is Node built-ins.
 
-## Credit
+## Prior art
 
-The idea of proxying a coding agent to read its prompts comes from Matt
-Pocock's AI Coding Crash Course, which includes a multi-agent `request-logger`
-that writes Markdown captures. `ai-logger` narrows the scope to Claude Code and
+Proxying a program to read what it sends is an old technique — HTTP debugging
+proxies have worked this way for decades, and several tools capture coding-agent
+traffic to Markdown or JSON. `ai-logger` narrows the scope to Claude Code and
 adds a UI, a metrics index and live streaming.
 
 ## License
