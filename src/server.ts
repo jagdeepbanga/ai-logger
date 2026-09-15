@@ -38,6 +38,40 @@ const MIME: Record<string, string> = {
   ".map": "application/json; charset=utf-8",
 };
 
+/**
+ * Hosts the viewer will answer to.
+ *
+ * The server binds to loopback, but binding is not the whole story: a hostile
+ * page can point a domain it controls at 127.0.0.1 (DNS rebinding) and then
+ * read every recording as same-origin, because the browser believes it is
+ * talking to the attacker's site. Checking the Host header closes that, since
+ * a rebound request still carries the attacker's hostname.
+ */
+const ALLOWED_HOSTS = new Set(["127.0.0.1", "localhost", "[::1]", "::1"]);
+
+function hostAllowed(host: string | undefined): boolean {
+  if (!host) return false;
+  // Strip the port, keeping a bracketed IPv6 literal intact.
+  const name = host.startsWith("[")
+    ? host.slice(0, host.indexOf("]") + 1)
+    : host.split(":")[0]!;
+  return ALLOWED_HOSTS.has(name.toLowerCase());
+}
+
+/**
+ * One path segment as it is safe to join onto the recordings root.
+ *
+ * A project and a session id both arrive from the URL and both end up inside
+ * `path.join`, where `..` would escape the recordings directory — on DELETE,
+ * into a recursive remove of somewhere else entirely. Only the characters the
+ * recorder itself produces are accepted.
+ */
+const SAFE_SEGMENT = /^[A-Za-z0-9._-]+$/;
+
+export function isSafeSegment(segment: string): boolean {
+  return segment !== "." && segment !== ".." && SAFE_SEGMENT.test(segment);
+}
+
 export interface ServerHandle {
   port: number;
   close(): Promise<void>;
@@ -80,6 +114,11 @@ function route(
   res: http.ServerResponse,
   clients: Set<http.ServerResponse>
 ): void {
+  if (!hostAllowed(req.headers.host)) {
+    json(res, 403, { error: "ai-logger only answers to a loopback host" });
+    return;
+  }
+
   const url = new URL(req.url ?? "/", "http://127.0.0.1");
   const parts = url.pathname.split("/").filter(Boolean);
 
@@ -111,6 +150,10 @@ function route(
   if (parts[1] === "sessions" && parts.length >= 4) {
     const project = decodeURIComponent(parts[2]!);
     const id = decodeURIComponent(parts[3]!);
+    if (!isSafeSegment(project) || !isSafeSegment(id)) {
+      json(res, 400, { error: "bad project or session id" });
+      return;
+    }
 
     if (parts.length === 4) {
       if (req.method === "DELETE") {
@@ -141,7 +184,13 @@ function route(
           json(res, 404, { error: "no such call" });
           return;
         }
-        res.writeHead(200, { "content-type": "text/plain; charset=utf-8" });
+        res.writeHead(200, {
+          "content-type": "text/plain; charset=utf-8",
+          // A recording is full of text the model and the tools produced. It
+          // is served as plain text and must stay that way, never sniffed
+          // into HTML that then runs against the viewer's own origin.
+          "x-content-type-options": "nosniff",
+        });
         res.end(raw);
         return;
       }
@@ -165,6 +214,7 @@ function json(res: http.ServerResponse, status: number, body: unknown): void {
     "content-type": "application/json; charset=utf-8",
     "content-length": Buffer.byteLength(text),
     "cache-control": "no-store",
+    "x-content-type-options": "nosniff",
   });
   res.end(text);
 }
@@ -188,7 +238,8 @@ function serveStatic(pathname: string, res: http.ServerResponse): void {
   // path.normalize collapses `..`, but a crafted path could still escape the
   // UI directory, so the result is checked rather than trusted.
   const file =
-    resolved.startsWith(UI_DIR) && fs.existsSync(resolved) && fs.statSync(resolved).isFile()
+    (resolved === UI_DIR || resolved.startsWith(UI_DIR + path.sep)) &&
+    fs.existsSync(resolved) && fs.statSync(resolved).isFile()
       ? resolved
       : path.join(UI_DIR, "index.html");
 
@@ -196,6 +247,7 @@ function serveStatic(pathname: string, res: http.ServerResponse): void {
   res.writeHead(200, {
     "content-type": MIME[path.extname(file)] ?? "application/octet-stream",
     "content-length": body.length,
+    "x-content-type-options": "nosniff",
     // Hashed asset names make long caching safe; index.html must not be
     // cached or a rebuilt UI would keep serving the old bundle.
     "cache-control": file.endsWith("index.html") ? "no-store" : "max-age=31536000",

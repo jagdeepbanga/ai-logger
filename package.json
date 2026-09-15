@@ -3,6 +3,12 @@
   "version": "0.1.0",
   "description": "See and browse every request Claude Code sends to the model, in a local web UI.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jagdeepbanga/ai-logger.git"
+  },
+  "homepage": "https://github.com/jagdeepbanga/ai-logger#readme",
+  "bugs": "https://github.com/jagdeepbanga/ai-logger/issues",
   "type": "module",
   "bin": {
     "ai-logger": "dist/cli.js"
